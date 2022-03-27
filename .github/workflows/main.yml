@@ -1,0 +1,38 @@
+name: Build CI
+
+on: 
+  push:
+    paths-ignore: 
+      - README.md
+      - LICENSE.txt
+
+jobs:
+  build:
+
+    runs-on: windows-2019
+
+    strategy:
+      matrix:
+        node-version: [14.17.3]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - uses: actions/cache@v1
+      with:
+        path: ~\AppData\Roaming\npm-cache
+        key: ${{ runner.os }}-node-${{ hashFiles('**\package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    - run: |
+        npm install
+    - run: npm run lint
+    - name: Generate helper docs
+      run: npm run generate-docs
+    - run: npm run electron:build
+      env:
+        CI: true
+        GH_TOKEN: ${{ secrets.github_token }}
